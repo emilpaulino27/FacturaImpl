@@ -2,28 +2,53 @@
 package main;
 
 import connection.conn;
+import static java.awt.SystemColor.info;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import static org.jfree.util.Log.info;
+import static org.jfree.util.Log.info;
 
 
 public class frm_facturacion extends javax.swing.JFrame {
 
+   /* String info = frm_insert_clients.txt_usuario.getText();
+    frm_facturacion.txf_cajera.setText(info);*/
+    
+    
     int ultimoid;
     Statement st;
     ResultSet rs;
  
-    public frm_facturacion() {
+    DefaultTableModel dtm;
+//    Object[] objeto = new Object[6];
+    
+    
+    public frm_facturacion() throws SQLException {
         initComponents();
         txf_fecha.setText(fecha());
+        ObtenerUltimoId();
+        
+        dtm = new DefaultTableModel();
+        dtm.addColumn("COD");
+        dtm.addColumn("Nombre");
+        dtm.addColumn("Precio");
+        dtm.addColumn("Cantidad");
+        dtm.addColumn("Total");
+        
+        this.tbl_productos.setModel(dtm);
+        SumarTotales();
         
     }
 
-    
-    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -38,8 +63,6 @@ public class frm_facturacion extends javax.swing.JFrame {
         txt_fecha = new javax.swing.JLabel();
         txf_fecha = new javax.swing.JTextField();
         txf_cajera = new javax.swing.JTextField();
-        txt_formapago = new javax.swing.JLabel();
-        cmb_formapago = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         tbl_productos = new javax.swing.JTable();
         txt_cliente = new javax.swing.JLabel();
@@ -57,8 +80,9 @@ public class frm_facturacion extends javax.swing.JFrame {
         jb_eliminar = new javax.swing.JButton();
         jb_guardar = new javax.swing.JButton();
         jb_imprimir = new javax.swing.JButton();
-        jb_limpiar = new javax.swing.JButton();
-        txt_total = new javax.swing.JLabel();
+        lbl_total = new javax.swing.JLabel();
+        txf_subtotal = new javax.swing.JTextField();
+        lbl_subtotal = new javax.swing.JLabel();
         txf_total = new javax.swing.JTextField();
         pnl_fondon = new javax.swing.JPanel();
 
@@ -75,6 +99,7 @@ public class frm_facturacion extends javax.swing.JFrame {
         txt_codigop.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
         txt_codigop.setText("Codigo");
 
+        txf_numfactura.setEditable(false);
         txf_numfactura.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
 
         txt_cajera.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
@@ -83,18 +108,11 @@ public class frm_facturacion extends javax.swing.JFrame {
         txt_fecha.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
         txt_fecha.setText("Fecha");
 
-        txt_formapago.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
-        txt_formapago.setText("Forma Pago");
-
-        cmb_formapago.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Efectivo", "Tarjeta" }));
-        cmb_formapago.setBorder(null);
+        txf_fecha.setEditable(false);
 
         tbl_productos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {},
-                {},
-                {},
-                {}
+
             },
             new String [] {
 
@@ -128,17 +146,30 @@ public class frm_facturacion extends javax.swing.JFrame {
         txf_cantidad.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
 
         jb_añadir.setText("Añadir");
+        jb_añadir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jb_añadirActionPerformed(evt);
+            }
+        });
 
         jb_eliminar.setText("Eliminar");
+        jb_eliminar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jb_eliminarActionPerformed(evt);
+            }
+        });
 
         jb_guardar.setText("GUARDAR");
 
         jb_imprimir.setText("IMPRIMIR");
 
-        jb_limpiar.setText("LIMPIAR");
+        lbl_total.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
+        lbl_total.setText("Total");
 
-        txt_total.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
-        txt_total.setText("Total");
+        txf_subtotal.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
+
+        lbl_subtotal.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
+        lbl_subtotal.setText("Subtotal");
 
         txf_total.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
 
@@ -177,46 +208,40 @@ public class frm_facturacion extends javax.swing.JFrame {
                         .addComponent(txt_numfactura)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(pnl_fondobLayout.createSequentialGroup()
-                                .addComponent(txf_numfactura, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(txt_fecha))
+                            .addComponent(txf_numfactura, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(pnl_fondobLayout.createSequentialGroup()
                                 .addGap(12, 12, 12)
-                                .addComponent(jb_buscarproducto))))
+                                .addComponent(jb_buscarproducto)))
+                        .addGap(32, 32, 32))
                     .addGroup(pnl_fondobLayout.createSequentialGroup()
                         .addComponent(jb_guardar)
                         .addGap(129, 129, 129)))
                 .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(pnl_fondobLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(txt_fecha)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(txf_fecha, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(22, 22, 22)
                         .addComponent(txt_cajera)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGap(18, 18, 18)
                         .addComponent(txf_cajera, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(25, 25, 25)
-                        .addComponent(txt_formapago)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cmb_formapago, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                        .addGap(42, 42, 42)
                         .addComponent(txt_cliente)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txf_cliente, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(40, 40, 40))
+                        .addGap(18, 18, 18)
+                        .addComponent(txf_cliente, javax.swing.GroupLayout.PREFERRED_SIZE, 161, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(76, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_fondobLayout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 518, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(47, 47, 47))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_fondobLayout.createSequentialGroup()
                         .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(pnl_fondobLayout.createSequentialGroup()
-                                .addGap(43, 43, 43)
-                                .addComponent(jb_limpiar)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(txt_total)
-                                .addGap(18, 18, 18)
-                                .addComponent(txf_total, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(pnl_fondobLayout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 518, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(47, 47, 47))))
+                            .addComponent(lbl_subtotal)
+                            .addComponent(lbl_total))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txf_subtotal, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txf_total, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(61, 61, 61))))
         );
         pnl_fondobLayout.setVerticalGroup(
             pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -230,8 +255,6 @@ public class frm_facturacion extends javax.swing.JFrame {
                     .addComponent(txt_fecha)
                     .addComponent(txf_fecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txf_cajera, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txt_formapago)
-                    .addComponent(cmb_formapago, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txt_numfactura)
                     .addComponent(txt_cliente)
                     .addComponent(txf_cliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -260,20 +283,17 @@ public class frm_facturacion extends javax.swing.JFrame {
                             .addComponent(jb_añadir)
                             .addComponent(jb_eliminar)))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnl_fondobLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jb_guardar)
-                            .addComponent(jb_imprimir)
-                            .addComponent(jb_limpiar))
-                        .addGap(37, 37, 37))
-                    .addGroup(pnl_fondobLayout.createSequentialGroup()
-                        .addGap(35, 35, 35)
-                        .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(txf_total, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txt_total))
-                        .addContainerGap(58, Short.MAX_VALUE))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lbl_subtotal)
+                    .addComponent(txf_subtotal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(pnl_fondobLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jb_guardar)
+                    .addComponent(jb_imprimir)
+                    .addComponent(lbl_total)
+                    .addComponent(txf_total, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(37, 37, 37))
         );
 
         pnl_fondoa.add(pnl_fondob, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 60, 950, 570));
@@ -307,6 +327,71 @@ public class frm_facturacion extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    
+    // Función para sumar los totales
+    
+    public void SumarTotales() {
+        
+        float subtotal = 0;
+        float fila = 0;
+        float resultado = 0;
+        float total = 0;
+        
+        try {
+            for (int i = 0; i < tbl_productos.getRowCount(); i++) {
+                fila =+ Float.parseFloat(dtm.getValueAt(i,4).toString());
+                subtotal += fila;
+                resultado = (float) (subtotal * 0.18);
+                total = resultado + subtotal;
+                
+                
+            } txf_subtotal.setText(Float.toString(subtotal));
+//              txt_itbis.setText(Float.toString(resultado));
+              txf_total.setText(Float.toString(total));
+                
+        } catch (NumberFormatException e) {
+
+        }
+    }
+    
+    private void jb_añadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jb_añadirActionPerformed
+        
+        String []info = new String[5];
+        info[0] = txf_codigop.getText();
+        info[1] = txf_producto.getText();
+        info[2] = txf_precio.getText();
+        info[3] = txf_cantidad.getText();
+        
+        String precio = txf_precio.getText();
+        String cantidad = txf_cantidad.getText();
+       
+        float total = Float.parseFloat(txf_precio.getText()) * Float.parseFloat(txf_cantidad.getText());
+        info[4] = String.valueOf(info);
+        
+        
+         dtm.addRow(info);
+        
+         txf_codigop.setText("");
+         txf_producto.setText("");
+         txf_precio.setText("");
+         txf_cantidad.setText("");
+               
+              
+    }//GEN-LAST:event_jb_añadirActionPerformed
+
+    private void jb_eliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jb_eliminarActionPerformed
+
+        int fila = tbl_productos.getSelectedRow();
+        
+        if(fila>=0) {
+            
+            dtm.removeRow(fila);
+        } else {
+            JOptionPane.showMessageDialog(null,"Selección no válida");
+            
+        } 
+    }//GEN-LAST:event_jb_eliminarActionPerformed
+
       // Función que pone la fecha automática
      public static String fecha() {
         Date fecha = new Date();
@@ -318,7 +403,7 @@ public class frm_facturacion extends javax.swing.JFrame {
        private void ObtenerUltimoId() throws SQLException {
         try {
             Connection con = conn.getConnection();
-            String sql = "select max(id_ventas) from ventas";
+            String sql = "select max(id_venta) from ventas";
             st = con.createStatement();
             
             rs = st.executeQuery(sql);
@@ -375,20 +460,24 @@ public class frm_facturacion extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new frm_facturacion().setVisible(true);
+                try {
+                    new frm_facturacion().setVisible(true);
+                } catch (SQLException ex) {
+                    Logger.getLogger(frm_facturacion.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JComboBox<String> cmb_formapago;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JButton jb_añadir;
     private javax.swing.JButton jb_buscarproducto;
     private javax.swing.JButton jb_eliminar;
     private javax.swing.JButton jb_guardar;
     private javax.swing.JButton jb_imprimir;
-    private javax.swing.JButton jb_limpiar;
+    private javax.swing.JLabel lbl_subtotal;
+    private javax.swing.JLabel lbl_total;
     private javax.swing.JPanel pnl_fondoa;
     private javax.swing.JPanel pnl_fondob;
     private javax.swing.JPanel pnl_fondon;
@@ -401,17 +490,16 @@ public class frm_facturacion extends javax.swing.JFrame {
     public static javax.swing.JTextField txf_numfactura;
     private javax.swing.JTextField txf_precio;
     private javax.swing.JTextField txf_producto;
+    private javax.swing.JTextField txf_subtotal;
     private javax.swing.JTextField txf_total;
     private javax.swing.JLabel txt_cajera;
     private javax.swing.JLabel txt_cantidad;
     private javax.swing.JLabel txt_cliente;
     private javax.swing.JLabel txt_codigop;
     private javax.swing.JLabel txt_fecha;
-    private javax.swing.JLabel txt_formapago;
     private javax.swing.JLabel txt_numfactura;
     private javax.swing.JLabel txt_precio;
     private javax.swing.JLabel txt_producto;
     private javax.swing.JLabel txt_titulo;
-    private javax.swing.JLabel txt_total;
     // End of variables declaration//GEN-END:variables
 }
