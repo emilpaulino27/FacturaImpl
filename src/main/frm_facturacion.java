@@ -18,7 +18,7 @@ import static org.jfree.util.Log.info;
 import static org.jfree.util.Log.info;
 
 
-public class frm_facturacion extends javax.swing.JFrame {
+public final class frm_facturacion extends javax.swing.JFrame {
 
    /* String info = frm_insert_clients.txt_usuario.getText();
     frm_facturacion.txf_cajera.setText(info);*/
@@ -45,7 +45,7 @@ public class frm_facturacion extends javax.swing.JFrame {
         dtm.addColumn("Total");
         
         this.tbl_productos.setModel(dtm);
-        SumarTotales();
+       
         
     }
 
@@ -354,6 +354,44 @@ public class frm_facturacion extends javax.swing.JFrame {
         }
     }
     
+     // Función para restar un subtotal eliminado
+      public void RestarSubTotales() {
+          
+        float total = 0;
+        float fila = 0;
+        
+        try {
+            for (int i = 0; i < tbl_productos.getRowCount(); i++) {
+                fila =- Float.parseFloat(dtm.getValueAt(i,4).toString());
+                total -= fila;
+                
+            } txf_subtotal.setText(Float.toString(total));
+        } catch (NumberFormatException e) {
+        }
+      }
+      
+           // Función para restar un subtotal eliminado
+      public void RestarTotales() {
+          
+        float total = 0;
+        float fila = 0;
+        
+        try {
+            for (int i = 0; i < tbl_productos.getRowCount(); i++) {
+                fila =- Float.parseFloat(dtm.getValueAt(i,4).toString());
+                total -= fila;
+                
+            }
+             String subtotalstr = txf_subtotal.getText();
+             float subtotal = Float.valueOf(subtotalstr);
+            float totalf = (float) (total * 0.18);
+            float totalreal = subtotal + totalf;
+                
+            txf_total.setText(Float.toString(totalreal));
+        } catch (NumberFormatException e) {
+        }
+      }
+    
     private void jb_añadirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jb_añadirActionPerformed
         
         String []info = new String[5];
@@ -366,7 +404,7 @@ public class frm_facturacion extends javax.swing.JFrame {
         String cantidad = txf_cantidad.getText();
        
         float total = Float.parseFloat(txf_precio.getText()) * Float.parseFloat(txf_cantidad.getText());
-        info[4] = String.valueOf(info);
+        info[4] = String.valueOf(total);
         
         
          dtm.addRow(info);
@@ -375,7 +413,7 @@ public class frm_facturacion extends javax.swing.JFrame {
          txf_producto.setText("");
          txf_precio.setText("");
          txf_cantidad.setText("");
-               
+         SumarTotales();
               
     }//GEN-LAST:event_jb_añadirActionPerformed
 
@@ -390,6 +428,8 @@ public class frm_facturacion extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null,"Selección no válida");
             
         } 
+         RestarSubTotales();
+         RestarTotales();
     }//GEN-LAST:event_jb_eliminarActionPerformed
 
       // Función que pone la fecha automática
