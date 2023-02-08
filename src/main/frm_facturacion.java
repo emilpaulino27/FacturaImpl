@@ -126,7 +126,7 @@ public final class frm_facturacion extends javax.swing.JFrame {
         jb_buscarproducto.setText("Buscar Producto");
 
         txt_numfactura.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
-        txt_numfactura.setText("No.Factura");
+        txt_numfactura.setText("No. Factura");
 
         txt_producto.setFont(new java.awt.Font("Calibri Light", 0, 18)); // NOI18N
         txt_producto.setText("Producto");
@@ -160,6 +160,11 @@ public final class frm_facturacion extends javax.swing.JFrame {
         });
 
         jb_guardar.setText("GUARDAR");
+        jb_guardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jb_guardarActionPerformed(evt);
+            }
+        });
 
         jb_imprimir.setText("IMPRIMIR");
 
@@ -229,7 +234,7 @@ public final class frm_facturacion extends javax.swing.JFrame {
                         .addComponent(txt_cliente)
                         .addGap(18, 18, 18)
                         .addComponent(txf_cliente, javax.swing.GroupLayout.PREFERRED_SIZE, 161, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(76, Short.MAX_VALUE))
+                        .addContainerGap(72, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_fondobLayout.createSequentialGroup()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 518, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(47, 47, 47))
@@ -431,6 +436,70 @@ public final class frm_facturacion extends javax.swing.JFrame {
          RestarSubTotales();
          RestarTotales();
     }//GEN-LAST:event_jb_eliminarActionPerformed
+
+    private void jb_guardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jb_guardarActionPerformed
+        // TODO add your handling code here:
+        
+        String No_factura = txf_numfactura.getText();
+        String Cliente = txf_cliente.getText();
+        String Cajera = txf_cajera.getText();
+        String Fecha = txf_fecha.getText();
+        String monto_total = txf_total.getText();
+        
+        
+        
+         if(No_factura.equals(""))
+        {
+            JOptionPane.showMessageDialog(null, "Agrega el numero de la factura");
+        }
+         
+         else if(Cliente.equals(""))
+        {
+            JOptionPane.showMessageDialog(null, "Agrega el nombre del cliente");
+        }
+         
+         else if(Cajera.equals(""))
+        {
+            JOptionPane.showMessageDialog(null, "Agrega el nombre de la cajera");
+        } 
+        
+        else if(Fecha.equals("-"))
+        {
+            JOptionPane.showMessageDialog(null, "Agrega la fecha de la factura");
+        } 
+        
+        else if(monto_total.equals("-"))
+        {
+            JOptionPane.showMessageDialog(null, "Agrega el monto total de la factura");
+        } 
+        
+        else{
+        PreparedStatement ps;
+        String query = "INSERT INTO `ventas`(`id_venta`,`id_cliente`, `id_user`, `fecha_hora`, `monto_total`) VALUES (?,?,?,?,?)";
+        try{
+            ps = conn.getConnection().prepareStatement(query);
+            
+            ps.setString(1, No_factura);
+            ps.setString(2, Cliente);
+            ps.setString(3, Cajera);
+            ps.setString(4, Fecha);
+            ps.setString(5, monto_total);
+               if(ps.executeUpdate() > 0)
+            {
+                JOptionPane.showMessageDialog(null, "Nueva venta agregada");
+            }
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(frm_insert_clients.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "error "+ex);
+            }  
+        }
+        
+     
+                                               
+            
+            
+    }//GEN-LAST:event_jb_guardarActionPerformed
 
       // Función que pone la fecha automática
      public static String fecha() {
